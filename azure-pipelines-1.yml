@@ -1,0 +1,51 @@
+trigger:
+  branches:
+    include:
+    - refs/heads/main
+
+variables:
+  # Azure Resource Manager connection created during pipeline creation
+  azureSubscription: '1709339c-63ef-482f-9e62-9289ae45b94f'
+
+  # Function app name
+  functionAppName: '2211100030001503-psdeploy-fa'
+
+  # Working Directory
+  workingDirectory: '$(System.DefaultWorkingDirectory)/'
+
+
+jobs:
+- job: Job_1
+  displayName: Agent job 1
+  pool:
+    vmImage: 'windows-2019'
+  steps:
+  - checkout: self
+    fetchDepth: 1
+  - task: PowerShell@2
+    displayName: dotnet build
+    inputs:
+      targetType: inline
+      script: >-
+        if (Test-Path "extensions.csproj") {
+             dotnet build extensions.csproj --output ./bin
+        }
+  - task: ArchiveFiles@2
+    displayName: Archive files
+    inputs:
+      rootFolderOrFile: $(System.DefaultWorkingDirectory)
+      includeRootFolder: false
+      archiveType: zip
+      archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+      replaceExistingArchive: true
+      
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: drop'
+
+  - task: AzureFunctionApp@1
+    displayName: 'Azure functions app deploy'
+    inputs:
+      azureSubscription: '$(azureSubscription)'
+      appType: functionApp
+      appName: $(functionAppName)
+      package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'

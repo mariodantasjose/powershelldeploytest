@@ -48,4 +48,4 @@ jobs:
       azureSubscription: '$(azureSubscription)'
       appType: functionApp
       appName: $(functionAppName)
-      package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
+      package: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
